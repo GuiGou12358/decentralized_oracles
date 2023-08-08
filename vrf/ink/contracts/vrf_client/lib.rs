@@ -16,9 +16,9 @@ pub mod vrf_client {
         meta_transaction::*, rollup_anchor, rollup_anchor::*,
     };
 
-    pub const REQUESTOR_ROLE: RoleType = ink::selector_id!("MANAGER_ROLE");
+    pub const REQUESTOR_ROLE: RoleType = ink::selector_id!("REQUESTOR_ROLE");
 
-    /// Events emitted when a radom value is received
+    /// Events emitted when a random value is received
     #[ink(event)]
     pub struct RandomValueReceived {
         /// id of the requestor
@@ -29,7 +29,7 @@ pub mod vrf_client {
         random_value: u128,
     }
 
-    /// Events emitted when a error is received
+    /// Events emitted when an error is received
     #[ink(event)]
     pub struct ErrorReceived {
         /// id of the requestor
