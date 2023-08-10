@@ -37,7 +37,7 @@ pub mod vrf_client {
         /// nonce of the requestor
         requestor_nonce: u128,
         /// error number
-        err_no: u128,
+        err_no: Vec<u8>,
     }
 
     /// Errors occurred in the contract
@@ -89,13 +89,13 @@ pub mod vrf_client {
         /// Type of response
         resp_type: u8,
         /// id of  the request
-        request_id: QueueIndex,
+        request_id: u32,
         /// random_value
         random_value: Option<u128>,
         /// signature of [requestor_id, requestor_nonce, min, max, random_value] hash
         signature: Option<Vec<u8>>,
         /// when an error occurs
-        err_no: Option<u128>,
+        error: Option<Vec<u8>>,
     }
 
     /// Type of response when the offchain rollup communicates with this contract
@@ -267,7 +267,7 @@ pub mod vrf_client {
                 self.env().emit_event(ErrorReceived {
                     requestor_id,
                     requestor_nonce,
-                    err_no: message.err_no.unwrap_or_default(),
+                    err_no: message.error.unwrap_or_default(),
                 });
             } else {
                 // response type unknown
@@ -374,7 +374,7 @@ pub mod vrf_client {
                 request_id,
                 random_value,
                 signature: None, // TODO
-                err_no: None,
+                error: None,
             };
             let actions = vec![
                 HandleActionInput {
@@ -505,7 +505,7 @@ pub mod vrf_client {
             let payload = RandomValueResponseMessage {
                 resp_type: TYPE_ERROR,
                 request_id,
-                err_no: Some(12356),
+                error: Some(12356.encode()),
                 signature: None,
                 random_value: None,
             };
