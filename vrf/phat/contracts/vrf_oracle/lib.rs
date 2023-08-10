@@ -352,7 +352,7 @@ mod vrf_oracle {
             );
             let args = vec![];
             let result = self.get_js_result(js_code, args)?;
-            info!("{min} + {max} =  {result:?}");
+            info!("random value between {min} and {max} :  {result:?}");
             let value = u128::from_str_radix(result.as_str(), 10)
                 .map_err(|e| ContractError::ParseIntError(e.to_string()))?;
             Ok(value)
