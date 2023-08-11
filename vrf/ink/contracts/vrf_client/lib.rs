@@ -4,6 +4,7 @@
 #[openbrush::contract]
 pub mod vrf_client {
     use ink::codegen::{EmitEvent, Env};
+    use ink::env::hash::{Blake2x256, HashOutput};
     use ink::prelude::vec::Vec;
     use ink::storage::Mapping;
     use openbrush::contracts::access_control::*;
@@ -76,7 +77,7 @@ pub mod vrf_client {
         /// id of the requestor
         requestor_id: AccountId,
         /// nonce of the requestor
-        requestor_nonce: u128,
+        requestor_nonce: Nonce,
         /// minimum value requested
         min: u128,
         /// maximum value requested
@@ -88,12 +89,10 @@ pub mod vrf_client {
     struct RandomValueResponseMessage {
         /// Type of response
         resp_type: u8,
-        /// id of  the request
-        request_id: u32,
+        /// initial request
+        request: RandomValueRequestMessage,
         /// random_value
         random_value: Option<u128>,
-        /// signature of [requestor_id, requestor_nonce, min, max, random_value] hash
-        signature: Option<Vec<u8>>,
         /// when an error occurs
         error: Option<Vec<u8>>,
     }
@@ -114,7 +113,9 @@ pub mod vrf_client {
         #[storage_field]
         meta_transaction: meta_transaction::Data,
         /// Nonce of the requestor.
-        requestor_nonces: Mapping<AccountId, u128>,
+        requestor_nonces: Mapping<AccountId, Nonce>,
+        /// hash of the request by (requestor,nonce)
+        hash_requests: Mapping<(AccountId, Nonce), Hash>,
         /// last random values by requestor
         last_values: Mapping<AccountId, u128>,
     }
@@ -136,7 +137,7 @@ pub mod vrf_client {
 
         #[ink(message)]
         #[openbrush::modifiers(access_control::only_role(MANAGER_ROLE))]
-        pub fn get_requestor_nonce(&mut self, requestor: AccountId) -> Result<u128, ContractError> {
+        pub fn get_requestor_nonce(&mut self, requestor: AccountId) -> Result<Nonce, ContractError> {
             let nonce = self.requestor_nonces.get(&requestor).unwrap_or(0);
             Ok(nonce)
         }
@@ -171,9 +172,15 @@ pub mod vrf_client {
             };
             let message_id = self.push_message(&message)?;
 
+            // hash the message
+            let mut hash = <Blake2x256 as HashOutput>::Type::default();
+            ink::env::hash_encoded::<Blake2x256, _>(&message, &mut hash);
+            // save the hash
+            let hash : Hash =  hash.into();
+            self.hash_requests.insert((&requestor_id, &requestor_nonce), &hash);
+
             // update the nonce
-            self.requestor_nonces
-                .insert(&requestor_id, &requestor_nonce);
+            self.requestor_nonces.insert(&requestor_id, &requestor_nonce);
 
             Ok(message_id)
         }
@@ -217,11 +224,27 @@ pub mod vrf_client {
                 Decode::decode(&mut &action[..]).or(Err(RollupAnchorError::FailedToDecode))?;
 
             // get the previous message
+            /*
             let request: RandomValueRequestMessage = self
                 .get_message(message.request_id)?
                 .ok_or(RollupAnchorError::FailedToDecode)?;
-            let requestor_id = request.requestor_id;
-            let requestor_nonce = request.requestor_nonce;
+             */
+
+            let requestor_id = message.request.requestor_id;
+            let requestor_nonce = message.request.requestor_nonce;
+
+            // hash the message
+            let mut hash = <Blake2x256 as HashOutput>::Type::default();
+            ink::env::hash_encoded::<Blake2x256, _>(&message.request, &mut hash);
+            let hash : Hash =  hash.into();
+            let expected_hash = self.hash_requests.get((&requestor_id, &requestor_nonce))
+                .ok_or(RollupAnchorError::ConditionNotMet)?;// TODO improve the error
+            // check the hash
+            if hash != expected_hash {
+                return Err(RollupAnchorError::ConditionNotMet); // TODO improve the error
+            }
+            // remove the ongoing hash
+            self.hash_requests.remove((&requestor_id, &requestor_nonce));
 
             // handle the response
             if message.resp_type == TYPE_RESPONSE {
@@ -230,28 +253,6 @@ pub mod vrf_client {
                 let random_value = message
                     .random_value
                     .ok_or(RollupAnchorError::FailedToDecode)?;
-
-                // TODO check the signature
-                /*
-                let ecdsa_public_key = MetaTransaction::get_ecdsa_public_key(&self, &request.from);
-
-                let requestor_id = request.requestor_id;
-                let requestor_nonce = request.requestor_nonce;
-                let min = request.min;
-                let max = request.max;
-
-                let mut hash = <Blake2x256 as HashOutput>::Type::default();
-                ink::env::hash_encoded::<Blake2x256, _>(&request, &mut hash);
-
-                // at the moment we can only verify ecdsa signatures
-                let mut public_key = [0u8; 33];
-                ink::env::ecdsa_recover(signature, &hash, &mut public_key)
-                    .map_err(|_| MetaTransactionError::IncorrectSignature)?;
-
-                if public_key != ecdsa_public_key {
-                    return Err(MetaTransactionError::PublicKeyNotMatch);
-                }
-                 */
 
                 // register the info
                 self.last_values.insert(&requestor_id, &random_value);
@@ -371,15 +372,20 @@ pub mod vrf_client {
             let random_value = Some(131_u128);
             let payload = RandomValueResponseMessage {
                 resp_type: TYPE_RESPONSE,
-                request_id,
+                request: RandomValueRequestMessage {
+                    requestor_id: ink::primitives::AccountId::from(ink_e2e::charlie::<PolkadotConfig>().account_id().0),
+                    requestor_nonce: 1,
+                    min: 100_u128,
+                    max: 1000_u128,
+                },
                 random_value,
-                signature: None, // TODO
                 error: None,
             };
             let actions = vec![
                 HandleActionInput {
                     action_type: ACTION_REPLY,
-                    id: Some(request_id),
+                    //id: Some(request_id),
+                    id: None,
                     action: Some(payload.encode()),
                     address: None,
                 },
@@ -396,16 +402,16 @@ pub mod vrf_client {
                 .call(&ink_e2e::bob(), rollup_cond_eq, 0, None)
                 .await
                 .expect("rollup cond eq should be ok");
-            // two events : MessageProcessedTo and RandomValueRecieved
+            // two events : MessageProcessedTo and RandomValueReceived
             assert!(result.contains_event("Contracts", "ContractEmitted"));
 
-            // and check if the rendom value is filled
+            // and check if the random value is filled
             let get_last_value = build_message::<VrfClientRef>(contract_acc_id.clone())
                 .call(|oracle| oracle.get_last_value());
             let get_res = client
                 .call_dry_run(&ink_e2e::charlie(), &get_last_value, 0, None)
                 .await;
-            let last_value = get_res.return_value().expect("Last vallue not found");
+            let last_value = get_res.return_value().expect("Last value not found");
 
             assert_eq!(last_value, Some(131));
 
@@ -413,7 +419,8 @@ pub mod vrf_client {
             let actions = vec![
                 HandleActionInput {
                     action_type: ACTION_REPLY,
-                    id: Some(request_id),
+                    //id: Some(request_id),
+                    id: None,
                     action: Some(payload.encode()),
                     address: None,
                 },
@@ -436,7 +443,8 @@ pub mod vrf_client {
             let actions = vec![
                 HandleActionInput {
                     action_type: ACTION_REPLY,
-                    id: Some(request_id),
+                    //id: Some(request_id),
+                    id: None,
                     action: Some(payload.encode()),
                     address: None,
                 },
@@ -457,6 +465,399 @@ pub mod vrf_client {
 
             Ok(())
         }
+
+
+        #[ink_e2e::test]
+        async fn test_many_sequential_requests_replies(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
+            // given
+            let constructor = VrfClientRef::new();
+            let contract_acc_id = client
+                .instantiate("vrf_client", &ink_e2e::alice(), constructor, 0, None)
+                .await
+                .expect("instantiate failed")
+                .account_id;
+
+            // bob is granted as attestor
+            let bob_address =
+                ink::primitives::AccountId::from(ink_e2e::bob::<PolkadotConfig>().account_id().0);
+            let grant_role = build_message::<VrfClientRef>(contract_acc_id.clone())
+                .call(|oracle| oracle.grant_role(ATTESTOR_ROLE, Some(bob_address)));
+            client
+                .call(&ink_e2e::alice(), grant_role, 0, None)
+                .await
+                .expect("grant bob as attestor failed");
+
+            // charlie is granted as requestor
+            let charlie_address = ink::primitives::AccountId::from(
+                ink_e2e::charlie::<PolkadotConfig>().account_id().0,
+            );
+            let grant_role = build_message::<VrfClientRef>(contract_acc_id.clone())
+                .call(|oracle| oracle.grant_role(REQUESTOR_ROLE, Some(charlie_address)));
+            client
+                .call(&ink_e2e::alice(), grant_role, 0, None)
+                .await
+                .expect("grant charlie as requestor failed");
+
+            // a request is sent
+            let request_random_value = build_message::<VrfClientRef>(contract_acc_id.clone())
+                .call(|oracle| oracle.request_random_value(0_u128, 1000000000_u128));
+            let result = client
+                .call(&ink_e2e::charlie(), request_random_value, 0, None)
+                .await
+                .expect("Request random value should be sent");
+            // event MessageQueued
+            assert!(result.contains_event("Contracts", "ContractEmitted"));
+
+            let request_id = result.return_value().expect("Request id not found");
+
+            // then a response is received
+            let random_value = Some(131_u128);
+            let payload = RandomValueResponseMessage {
+                resp_type: TYPE_RESPONSE,
+                request: RandomValueRequestMessage {
+                    requestor_id: ink::primitives::AccountId::from(ink_e2e::charlie::<PolkadotConfig>().account_id().0),
+                    requestor_nonce: 1,
+                    min: 0_u128,
+                    max: 1000000000_u128,
+                },
+                random_value,
+                error: None,
+            };
+            let actions = vec![
+                HandleActionInput {
+                    action_type: ACTION_REPLY,
+                    //id: Some(request_id),
+                    id: None,
+                    action: Some(payload.encode()),
+                    address: None,
+                },
+                HandleActionInput {
+                    action_type: ACTION_SET_QUEUE_HEAD,
+                    id: Some(request_id + 1),
+                    action: None,
+                    address: None,
+                },
+            ];
+            let rollup_cond_eq = build_message::<VrfClientRef>(contract_acc_id.clone())
+                .call(|oracle| oracle.rollup_cond_eq(vec![], vec![], actions.clone()));
+            let result = client
+                .call(&ink_e2e::bob(), rollup_cond_eq, 0, None)
+                .await
+                .expect("rollup cond eq should be ok");
+            // two events : MessageProcessedTo and RandomValueReceived
+            assert!(result.contains_event("Contracts", "ContractEmitted"));
+
+            // and check if the random value is filled
+            let get_last_value = build_message::<VrfClientRef>(contract_acc_id.clone())
+                .call(|oracle| oracle.get_last_value());
+            let get_res = client
+                .call_dry_run(&ink_e2e::charlie(), &get_last_value, 0, None)
+                .await;
+            let last_value = get_res.return_value().expect("Last value not found");
+
+            assert_eq!(last_value, Some(131));
+
+            // another request is sent
+            let request_random_value = build_message::<VrfClientRef>(contract_acc_id.clone())
+                .call(|oracle| oracle.request_random_value(50_u128, 100_u128));
+            let result = client
+                .call(&ink_e2e::charlie(), request_random_value, 0, None)
+                .await
+                .expect("Request random value should be sent");
+            // event MessageQueued
+            assert!(result.contains_event("Contracts", "ContractEmitted"));
+
+            let request_id = result.return_value().expect("Request id not found");
+
+            // another response is received
+            let random_value = Some(75_u128);
+            let payload = RandomValueResponseMessage {
+                resp_type: TYPE_RESPONSE,
+                request: RandomValueRequestMessage {
+                    requestor_id: ink::primitives::AccountId::from(ink_e2e::charlie::<PolkadotConfig>().account_id().0),
+                    requestor_nonce: 2,
+                    min: 50_u128,
+                    max: 100_u128,
+                },
+                random_value,
+                error: None,
+            };
+            let actions = vec![
+                HandleActionInput {
+                    action_type: ACTION_REPLY,
+                    //id: Some(request_id),
+                    id: None,
+                    action: Some(payload.encode()),
+                    address: None,
+                },
+                HandleActionInput {
+                    action_type: ACTION_SET_QUEUE_HEAD,
+                    id: Some(request_id + 1),
+                    action: None,
+                    address: None,
+                },
+            ];
+            let rollup_cond_eq = build_message::<VrfClientRef>(contract_acc_id.clone())
+                .call(|oracle| oracle.rollup_cond_eq(vec![], vec![], actions.clone()));
+            let result = client
+                .call(&ink_e2e::bob(), rollup_cond_eq, 0, None)
+                .await
+                .expect("rollup cond eq should be ok");
+            // two events : MessageProcessedTo and RandomValueReceived
+            assert!(result.contains_event("Contracts", "ContractEmitted"));
+
+            // and check if the random value is filled
+            let get_last_value = build_message::<VrfClientRef>(contract_acc_id.clone())
+                .call(|oracle| oracle.get_last_value());
+            let get_res = client
+                .call_dry_run(&ink_e2e::charlie(), &get_last_value, 0, None)
+                .await;
+            let last_value = get_res.return_value().expect("Last value not found");
+
+            assert_eq!(last_value, Some(75_u128));
+
+            Ok(())
+        }
+
+
+
+        #[ink_e2e::test]
+        async fn test_concurrent_requests_replies(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
+            // given
+            let constructor = VrfClientRef::new();
+            let contract_acc_id = client
+                .instantiate("vrf_client", &ink_e2e::alice(), constructor, 0, None)
+                .await
+                .expect("instantiate failed")
+                .account_id;
+
+            // bob is granted as attestor
+            let bob_address =
+                ink::primitives::AccountId::from(ink_e2e::bob::<PolkadotConfig>().account_id().0);
+            let grant_role = build_message::<VrfClientRef>(contract_acc_id.clone())
+                .call(|oracle| oracle.grant_role(ATTESTOR_ROLE, Some(bob_address)));
+            client
+                .call(&ink_e2e::alice(), grant_role, 0, None)
+                .await
+                .expect("grant bob as attestor failed");
+
+            // charlie is granted as requestor
+            let charlie_address = ink::primitives::AccountId::from(
+                ink_e2e::charlie::<PolkadotConfig>().account_id().0,
+            );
+            let grant_role = build_message::<VrfClientRef>(contract_acc_id.clone())
+                .call(|oracle| oracle.grant_role(REQUESTOR_ROLE, Some(charlie_address)));
+            client
+                .call(&ink_e2e::alice(), grant_role, 0, None)
+                .await
+                .expect("grant charlie as requestor failed");
+
+            // a first request is sent
+            let request_random_value = build_message::<VrfClientRef>(contract_acc_id.clone())
+                .call(|oracle| oracle.request_random_value(0_u128, 1000000000_u128));
+            let result = client
+                .call(&ink_e2e::charlie(), request_random_value, 0, None)
+                .await
+                .expect("Request random value should be sent");
+            // event MessageQueued
+            assert!(result.contains_event("Contracts", "ContractEmitted"));
+
+            let request_id_1 = result.return_value().expect("Request id not found");
+
+            // another request is sent
+            let request_random_value = build_message::<VrfClientRef>(contract_acc_id.clone())
+                .call(|oracle| oracle.request_random_value(0_u128, 50_u128));
+            let result = client
+                .call(&ink_e2e::charlie(), request_random_value, 0, None)
+                .await
+                .expect("Request random value should be sent");
+            // event MessageQueued
+            assert!(result.contains_event("Contracts", "ContractEmitted"));
+
+            let request_id_2 = result.return_value().expect("Request id not found");
+
+            // then a response is received
+            let random_value = Some(131_u128);
+            let payload = RandomValueResponseMessage {
+                resp_type: TYPE_RESPONSE,
+                request: RandomValueRequestMessage {
+                    requestor_id: ink::primitives::AccountId::from(ink_e2e::charlie::<PolkadotConfig>().account_id().0),
+                    requestor_nonce: 1,
+                    min: 0_u128,
+                    max: 1000000000_u128,
+                },
+                random_value,
+                error: None,
+            };
+            let actions = vec![
+                HandleActionInput {
+                    action_type: ACTION_REPLY,
+                    //id: Some(request_id_1),
+                    id: None,
+                    action: Some(payload.encode()),
+                    address: None,
+                },
+                HandleActionInput {
+                    action_type: ACTION_SET_QUEUE_HEAD,
+                    id: Some(request_id_1 + 1),
+                    action: None,
+                    address: None,
+                },
+            ];
+            let rollup_cond_eq = build_message::<VrfClientRef>(contract_acc_id.clone())
+                .call(|oracle| oracle.rollup_cond_eq(vec![], vec![], actions.clone()));
+            let result = client
+                .call(&ink_e2e::bob(), rollup_cond_eq, 0, None)
+                .await
+                .expect("rollup cond eq should be ok");
+            // two events : MessageProcessedTo and RandomValueReceived
+            assert!(result.contains_event("Contracts", "ContractEmitted"));
+
+            // and check if the random value is filled
+            let get_last_value = build_message::<VrfClientRef>(contract_acc_id.clone())
+                .call(|oracle| oracle.get_last_value());
+            let get_res = client
+                .call_dry_run(&ink_e2e::charlie(), &get_last_value, 0, None)
+                .await;
+            let last_value = get_res.return_value().expect("Last value not found");
+
+            assert_eq!(last_value, Some(131));
+
+            // another response is received
+            let random_value = Some(25_u128);
+            let payload = RandomValueResponseMessage {
+                resp_type: TYPE_RESPONSE,
+                request: RandomValueRequestMessage {
+                    requestor_id: ink::primitives::AccountId::from(ink_e2e::charlie::<PolkadotConfig>().account_id().0),
+                    requestor_nonce: 2,
+                    min: 0_u128,
+                    max: 50_u128,
+                },
+                random_value,
+                error: None,
+            };
+            let actions = vec![
+                HandleActionInput {
+                    action_type: ACTION_REPLY,
+                    //id: Some(request_id_2),
+                    id: None,
+                    action: Some(payload.encode()),
+                    address: None,
+                },
+                HandleActionInput {
+                    action_type: ACTION_SET_QUEUE_HEAD,
+                    id: Some(request_id_2 + 1),
+                    action: None,
+                    address: None,
+                },
+            ];
+            let rollup_cond_eq = build_message::<VrfClientRef>(contract_acc_id.clone())
+                .call(|oracle| oracle.rollup_cond_eq(vec![], vec![], actions.clone()));
+            let result = client
+                .call(&ink_e2e::bob(), rollup_cond_eq, 0, None)
+                .await
+                .expect("rollup cond eq should be ok");
+            // two events : MessageProcessedTo and RandomValueReceived
+            assert!(result.contains_event("Contracts", "ContractEmitted"));
+
+            // and check if the random value is filled
+            let get_last_value = build_message::<VrfClientRef>(contract_acc_id.clone())
+                .call(|oracle| oracle.get_last_value());
+            let get_res = client
+                .call_dry_run(&ink_e2e::charlie(), &get_last_value, 0, None)
+                .await;
+            let last_value = get_res.return_value().expect("Last value not found");
+
+            assert_eq!(last_value, Some(25_u128));
+
+            Ok(())
+        }
+
+
+        #[ink_e2e::test]
+        async fn test_bad_hash(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
+            // given
+            let constructor = VrfClientRef::new();
+            let contract_acc_id = client
+                .instantiate("vrf_client", &ink_e2e::alice(), constructor, 0, None)
+                .await
+                .expect("instantiate failed")
+                .account_id;
+
+            // bob is granted as attestor
+            let bob_address =
+                ink::primitives::AccountId::from(ink_e2e::bob::<PolkadotConfig>().account_id().0);
+            let grant_role = build_message::<VrfClientRef>(contract_acc_id.clone())
+                .call(|oracle| oracle.grant_role(ATTESTOR_ROLE, Some(bob_address)));
+            client
+                .call(&ink_e2e::alice(), grant_role, 0, None)
+                .await
+                .expect("grant bob as attestor failed");
+
+            // charlie is granted as requestor
+            let charlie_address = ink::primitives::AccountId::from(
+                ink_e2e::charlie::<PolkadotConfig>().account_id().0,
+            );
+            let grant_role = build_message::<VrfClientRef>(contract_acc_id.clone())
+                .call(|oracle| oracle.grant_role(REQUESTOR_ROLE, Some(charlie_address)));
+            client
+                .call(&ink_e2e::alice(), grant_role, 0, None)
+                .await
+                .expect("grant charlie as requestor failed");
+
+            // a request is sent
+            let request_random_value = build_message::<VrfClientRef>(contract_acc_id.clone())
+                .call(|oracle| oracle.request_random_value(0_u128, 1000000000_u128));
+            let result = client
+                .call(&ink_e2e::charlie(), request_random_value, 0, None)
+                .await
+                .expect("Request random value should be sent");
+            // event MessageQueued
+            assert!(result.contains_event("Contracts", "ContractEmitted"));
+
+            let request_id = result.return_value().expect("Request id not found");
+
+            // then a response is received
+            let random_value = Some(51_u128);
+            let payload = RandomValueResponseMessage {
+                resp_type: TYPE_RESPONSE,
+                request: RandomValueRequestMessage {
+                    requestor_id: ink::primitives::AccountId::from(ink_e2e::charlie::<PolkadotConfig>().account_id().0),
+                    requestor_nonce: 1,
+                    min: 51_u128, // bad rpc that update the min and max values
+                    max: 51_u128,
+                },
+                random_value,
+                error: None,
+            };
+            let actions = vec![
+                HandleActionInput {
+                    action_type: ACTION_REPLY,
+                    //id: Some(request_id),
+                    id: None,
+                    action: Some(payload.encode()),
+                    address: None,
+                },
+                HandleActionInput {
+                    action_type: ACTION_SET_QUEUE_HEAD,
+                    id: Some(request_id + 1),
+                    action: None,
+                    address: None,
+                },
+            ];
+            let rollup_cond_eq = build_message::<VrfClientRef>(contract_acc_id.clone())
+                .call(|oracle| oracle.rollup_cond_eq(vec![], vec![], actions.clone()));
+            let result = client
+                .call(&ink_e2e::bob(), rollup_cond_eq, 0, None)
+                .await;
+            assert!(
+                result.is_err(),
+                "We should not accept response with bad initial request"
+            );
+
+            Ok(())
+        }
+
 
         #[ink_e2e::test]
         async fn test_receive_error(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
@@ -504,9 +905,13 @@ pub mod vrf_client {
             // then a response is received
             let payload = RandomValueResponseMessage {
                 resp_type: TYPE_ERROR,
-                request_id,
+                request: RandomValueRequestMessage {
+                    requestor_id: ink::primitives::AccountId::from(ink_e2e::charlie::<PolkadotConfig>().account_id().0),
+                    requestor_nonce: 1,
+                    min: 100_u128,
+                    max: 1000_u128,
+                },
                 error: Some(12356.encode()),
-                signature: None,
                 random_value: None,
             };
             let actions = vec![

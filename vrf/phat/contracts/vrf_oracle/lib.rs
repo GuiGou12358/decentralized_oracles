@@ -14,7 +14,7 @@ mod vrf_oracle {
 
     /// Message to request the random value
     /// message pushed in the queue by this contract and read by the offchain rollup
-    #[derive(Encode, Decode)]
+    #[derive(Eq, PartialEq, Clone, scale::Encode, scale::Decode)]
     struct RandomValueRequestMessage {
         /// id of the requestor
         requestor_id: AccountId,
@@ -31,12 +31,10 @@ mod vrf_oracle {
     struct RandomValueResponseMessage {
         /// Type of response
         resp_type: u8,
-        /// id of  the request
-        request_id: u32,
+        /// initial request
+        request: RandomValueRequestMessage,
         /// random_value
         random_value: Option<u128>,
-        /// signature of [requestor_id, requestor_nonce, min, max, random_value] hash
-        signature: Option<Vec<u8>>,
         /// when an error occurs
         error: Option<Vec<u8>>,
     }
@@ -279,7 +277,7 @@ mod vrf_oracle {
                 .log_err("answer_request: failed to read queue")?
                 .ok_or(ContractError::NoRequestInQueue)?;
 
-            let response = self.handle_request(&request)?;
+            let response = self.handle_request(request)?;
             // Attach an action to the tx by:
             client.action(Action::Reply(response.encode()));
 
@@ -288,7 +286,7 @@ mod vrf_oracle {
 
         fn handle_request(
             &self,
-            request: &RandomValueRequestMessage,
+            request: RandomValueRequestMessage,
         ) -> Result<RandomValueResponseMessage> {
             /*
             let Some(Core{ script, settings, code_hash }) = self.core.get() else {
@@ -304,9 +302,8 @@ mod vrf_oracle {
             if min > max {
                 let response = RandomValueResponseMessage {
                     resp_type: TYPE_ERROR,
-                    request_id: 0, // TODO
+                    request,
                     random_value: None,
-                    signature: None,
                     error: Some(ContractError::MinGreaterThanMax.encode()),
                 };
                 return Ok(response);
@@ -320,18 +317,16 @@ mod vrf_oracle {
                 Ok(random_value) => {
                     RandomValueResponseMessage {
                         resp_type: TYPE_RESPONSE,
-                        request_id: 0, // TODO
+                        request,
                         random_value: Some(random_value),
-                        signature: None,
                         error: None,
                     }
                 }
                 Err(e) => {
                     RandomValueResponseMessage {
                         resp_type: TYPE_ERROR,
-                        request_id: 0, // TODO
+                        request,
                         random_value: None,
-                        signature: None,
                         error: Some(e.encode()),
                     }
                 }
