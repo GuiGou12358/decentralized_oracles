@@ -317,7 +317,7 @@ pub mod vrf_client {
         use super::*;
         use openbrush::contracts::access_control::accesscontrol_external::AccessControl;
 
-        use ink_e2e::{build_message, PolkadotConfig};
+        use ink_e2e::build_message;
         use phat_rollup_anchor_ink::traits::{
             meta_transaction::metatransaction_external::MetaTransaction,
             rollup_anchor::rollupanchor_external::RollupAnchor,
@@ -336,8 +336,7 @@ pub mod vrf_client {
                 .account_id;
 
             // bob is granted as attestor
-            let bob_address =
-                ink::primitives::AccountId::from(ink_e2e::bob::<PolkadotConfig>().account_id().0);
+            let bob_address = ink::primitives::AccountId::from(ink_e2e::bob().public_key().0);
             let grant_role = build_message::<VrfClientRef>(contract_acc_id.clone())
                 .call(|oracle| oracle.grant_role(ATTESTOR_ROLE, Some(bob_address)));
             client
@@ -346,9 +345,7 @@ pub mod vrf_client {
                 .expect("grant bob as attestor failed");
 
             // charlie is granted as requestor
-            let charlie_address = ink::primitives::AccountId::from(
-                ink_e2e::charlie::<PolkadotConfig>().account_id().0,
-            );
+            let charlie_address = ink::primitives::AccountId::from(ink_e2e::charlie().public_key().0);
             let grant_role = build_message::<VrfClientRef>(contract_acc_id.clone())
                 .call(|oracle| oracle.grant_role(REQUESTOR_ROLE, Some(charlie_address)));
             client
@@ -373,7 +370,7 @@ pub mod vrf_client {
             let payload = RandomValueResponseMessage {
                 resp_type: TYPE_RESPONSE,
                 request: RandomValueRequestMessage {
-                    requestor_id: ink::primitives::AccountId::from(ink_e2e::charlie::<PolkadotConfig>().account_id().0),
+                    requestor_id: ink::primitives::AccountId::from(ink_e2e::charlie().public_key().0),
                     requestor_nonce: 1,
                     min: 100_u128,
                     max: 1000_u128,
@@ -478,8 +475,7 @@ pub mod vrf_client {
                 .account_id;
 
             // bob is granted as attestor
-            let bob_address =
-                ink::primitives::AccountId::from(ink_e2e::bob::<PolkadotConfig>().account_id().0);
+            let bob_address = ink::primitives::AccountId::from(ink_e2e::bob().public_key().0);
             let grant_role = build_message::<VrfClientRef>(contract_acc_id.clone())
                 .call(|oracle| oracle.grant_role(ATTESTOR_ROLE, Some(bob_address)));
             client
@@ -488,9 +484,7 @@ pub mod vrf_client {
                 .expect("grant bob as attestor failed");
 
             // charlie is granted as requestor
-            let charlie_address = ink::primitives::AccountId::from(
-                ink_e2e::charlie::<PolkadotConfig>().account_id().0,
-            );
+            let charlie_address = ink::primitives::AccountId::from(ink_e2e::charlie().public_key().0);
             let grant_role = build_message::<VrfClientRef>(contract_acc_id.clone())
                 .call(|oracle| oracle.grant_role(REQUESTOR_ROLE, Some(charlie_address)));
             client
@@ -515,7 +509,7 @@ pub mod vrf_client {
             let payload = RandomValueResponseMessage {
                 resp_type: TYPE_RESPONSE,
                 request: RandomValueRequestMessage {
-                    requestor_id: ink::primitives::AccountId::from(ink_e2e::charlie::<PolkadotConfig>().account_id().0),
+                    requestor_id: ink::primitives::AccountId::from(ink_e2e::charlie().public_key().0),
                     requestor_nonce: 1,
                     min: 0_u128,
                     max: 1000000000_u128,
@@ -574,7 +568,7 @@ pub mod vrf_client {
             let payload = RandomValueResponseMessage {
                 resp_type: TYPE_RESPONSE,
                 request: RandomValueRequestMessage {
-                    requestor_id: ink::primitives::AccountId::from(ink_e2e::charlie::<PolkadotConfig>().account_id().0),
+                    requestor_id: ink::primitives::AccountId::from(ink_e2e::charlie().public_key().0),
                     requestor_nonce: 2,
                     min: 50_u128,
                     max: 100_u128,
@@ -632,8 +626,7 @@ pub mod vrf_client {
                 .account_id;
 
             // bob is granted as attestor
-            let bob_address =
-                ink::primitives::AccountId::from(ink_e2e::bob::<PolkadotConfig>().account_id().0);
+            let bob_address = ink::primitives::AccountId::from(ink_e2e::bob().public_key().0);
             let grant_role = build_message::<VrfClientRef>(contract_acc_id.clone())
                 .call(|oracle| oracle.grant_role(ATTESTOR_ROLE, Some(bob_address)));
             client
@@ -642,9 +635,7 @@ pub mod vrf_client {
                 .expect("grant bob as attestor failed");
 
             // charlie is granted as requestor
-            let charlie_address = ink::primitives::AccountId::from(
-                ink_e2e::charlie::<PolkadotConfig>().account_id().0,
-            );
+            let charlie_address = ink::primitives::AccountId::from(ink_e2e::charlie().public_key().0);
             let grant_role = build_message::<VrfClientRef>(contract_acc_id.clone())
                 .call(|oracle| oracle.grant_role(REQUESTOR_ROLE, Some(charlie_address)));
             client
@@ -681,7 +672,7 @@ pub mod vrf_client {
             let payload = RandomValueResponseMessage {
                 resp_type: TYPE_RESPONSE,
                 request: RandomValueRequestMessage {
-                    requestor_id: ink::primitives::AccountId::from(ink_e2e::charlie::<PolkadotConfig>().account_id().0),
+                    requestor_id: ink::primitives::AccountId::from(ink_e2e::charlie().public_key().0),
                     requestor_nonce: 1,
                     min: 0_u128,
                     max: 1000000000_u128,
@@ -728,7 +719,7 @@ pub mod vrf_client {
             let payload = RandomValueResponseMessage {
                 resp_type: TYPE_RESPONSE,
                 request: RandomValueRequestMessage {
-                    requestor_id: ink::primitives::AccountId::from(ink_e2e::charlie::<PolkadotConfig>().account_id().0),
+                    requestor_id: ink::primitives::AccountId::from(ink_e2e::charlie().public_key().0),
                     requestor_nonce: 2,
                     min: 0_u128,
                     max: 50_u128,
@@ -785,8 +776,7 @@ pub mod vrf_client {
                 .account_id;
 
             // bob is granted as attestor
-            let bob_address =
-                ink::primitives::AccountId::from(ink_e2e::bob::<PolkadotConfig>().account_id().0);
+            let bob_address = ink::primitives::AccountId::from(ink_e2e::bob().public_key().0);
             let grant_role = build_message::<VrfClientRef>(contract_acc_id.clone())
                 .call(|oracle| oracle.grant_role(ATTESTOR_ROLE, Some(bob_address)));
             client
@@ -795,9 +785,7 @@ pub mod vrf_client {
                 .expect("grant bob as attestor failed");
 
             // charlie is granted as requestor
-            let charlie_address = ink::primitives::AccountId::from(
-                ink_e2e::charlie::<PolkadotConfig>().account_id().0,
-            );
+            let charlie_address = ink::primitives::AccountId::from(ink_e2e::charlie().public_key().0);
             let grant_role = build_message::<VrfClientRef>(contract_acc_id.clone())
                 .call(|oracle| oracle.grant_role(REQUESTOR_ROLE, Some(charlie_address)));
             client
@@ -822,7 +810,7 @@ pub mod vrf_client {
             let payload = RandomValueResponseMessage {
                 resp_type: TYPE_RESPONSE,
                 request: RandomValueRequestMessage {
-                    requestor_id: ink::primitives::AccountId::from(ink_e2e::charlie::<PolkadotConfig>().account_id().0),
+                    requestor_id: ink::primitives::AccountId::from(ink_e2e::charlie().public_key().0),
                     requestor_nonce: 1,
                     min: 51_u128, // bad rpc that update the min and max values
                     max: 51_u128,
@@ -870,8 +858,7 @@ pub mod vrf_client {
                 .account_id;
 
             // bob is granted as attestor
-            let bob_address =
-                ink::primitives::AccountId::from(ink_e2e::bob::<PolkadotConfig>().account_id().0);
+            let bob_address = ink::primitives::AccountId::from(ink_e2e::bob().public_key().0);
             let grant_role = build_message::<VrfClientRef>(contract_acc_id.clone())
                 .call(|oracle| oracle.grant_role(ATTESTOR_ROLE, Some(bob_address)));
             client
@@ -880,9 +867,7 @@ pub mod vrf_client {
                 .expect("grant bob as attestor failed");
 
             // charlie is granted as requestor
-            let charlie_address = ink::primitives::AccountId::from(
-                ink_e2e::charlie::<PolkadotConfig>().account_id().0,
-            );
+            let charlie_address = ink::primitives::AccountId::from(ink_e2e::charlie().public_key().0);
             let grant_role = build_message::<VrfClientRef>(contract_acc_id.clone())
                 .call(|oracle| oracle.grant_role(REQUESTOR_ROLE, Some(charlie_address)));
             client
@@ -906,7 +891,7 @@ pub mod vrf_client {
             let payload = RandomValueResponseMessage {
                 resp_type: TYPE_ERROR,
                 request: RandomValueRequestMessage {
-                    requestor_id: ink::primitives::AccountId::from(ink_e2e::charlie::<PolkadotConfig>().account_id().0),
+                    requestor_id: ink::primitives::AccountId::from(ink_e2e::charlie().public_key().0),
                     requestor_nonce: 1,
                     min: 100_u128,
                     max: 1000_u128,
@@ -960,8 +945,7 @@ pub mod vrf_client {
             );
 
             // bob is granted as attestor
-            let bob_address =
-                ink::primitives::AccountId::from(ink_e2e::bob::<PolkadotConfig>().account_id().0);
+            let bob_address = ink::primitives::AccountId::from(ink_e2e::bob().public_key().0);
             let grant_role = build_message::<VrfClientRef>(contract_acc_id.clone())
                 .call(|oracle| oracle.grant_role(ATTESTOR_ROLE, Some(bob_address)));
             client
@@ -993,8 +977,7 @@ pub mod vrf_client {
                 .account_id;
 
             // bob is granted as attestor
-            let bob_address =
-                ink::primitives::AccountId::from(ink_e2e::bob::<PolkadotConfig>().account_id().0);
+            let bob_address = ink::primitives::AccountId::from(ink_e2e::bob().public_key().0);
             let grant_role = build_message::<VrfClientRef>(contract_acc_id.clone())
                 .call(|oracle| oracle.grant_role(ATTESTOR_ROLE, Some(bob_address)));
             client
@@ -1030,8 +1013,7 @@ pub mod vrf_client {
                 .account_id;
 
             // bob is granted as attestor
-            let bob_address =
-                ink::primitives::AccountId::from(ink_e2e::bob::<PolkadotConfig>().account_id().0);
+            let bob_address = ink::primitives::AccountId::from(ink_e2e::bob().public_key().0);
             let grant_role = build_message::<VrfClientRef>(contract_acc_id.clone())
                 .call(|oracle| oracle.grant_role(ATTESTOR_ROLE, Some(bob_address)));
             client
@@ -1089,7 +1071,7 @@ pub mod vrf_client {
             // register the ecda public key because I am not able to retrieve if from the account id
             // Alice
             let from =
-                ink::primitives::AccountId::from(ink_e2e::alice::<PolkadotConfig>().account_id().0);
+                ink::primitives::AccountId::from(ink_e2e::alice().public_key().0);
             let ecdsa_public_key: [u8; 33] = hex_literal::hex!(
                 "037051bed73458951b45ca6376f4096c85bf1a370da94d5336d04867cfaaad019e"
             );
@@ -1144,7 +1126,7 @@ pub mod vrf_client {
             // register the ecda public key because I am not able to retrieve if from the account id
             // Alice is the attestor
             let from =
-                ink::primitives::AccountId::from(ink_e2e::alice::<PolkadotConfig>().account_id().0);
+                ink::primitives::AccountId::from(ink_e2e::alice().public_key().0);
             let ecdsa_public_key: [u8; 33] = hex_literal::hex!(
                 "037051bed73458951b45ca6376f4096c85bf1a370da94d5336d04867cfaaad019e"
             );

@@ -1,13 +1,11 @@
 [toolchain]
-channel = "1.69"
+channel = "1.72"
 components = [
-    "cargo",
-    "clippy",
-    "rust-src",
-    "rust-std",
-    "rustc-dev",
     "rustc",
+    "cargo",
     "rustfmt",
+    "rust-src",
+    "clippy",
 ]
 targets = ["wasm32-unknown-unknown"]
 profile = "minimal"

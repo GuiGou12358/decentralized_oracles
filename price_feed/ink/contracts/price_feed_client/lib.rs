@@ -291,7 +291,7 @@ pub mod price_feed_client {
         use super::*;
         use openbrush::contracts::access_control::accesscontrol_external::AccessControl;
 
-        use ink_e2e::{build_message, PolkadotConfig};
+        use ink_e2e::build_message;
         use phat_rollup_anchor_ink::traits::{
             meta_transaction::metatransaction_external::MetaTransaction,
             rollup_anchor::rollupanchor_external::RollupAnchor,
@@ -304,7 +304,7 @@ pub mod price_feed_client {
             // given
             let constructor = TestOracleRef::new();
             let contract_acc_id = client
-                .instantiate("test_oracle", &ink_e2e::alice(), constructor, 0, None)
+                .instantiate("price_feed_client", &ink_e2e::alice(), constructor, 0, None)
                 .await
                 .expect("instantiate failed")
                 .account_id;
@@ -337,8 +337,8 @@ pub mod price_feed_client {
             );
 
             // bob is granted as manager
-            let bob_address =
-                ink::primitives::AccountId::from(ink_e2e::bob::<PolkadotConfig>().account_id().0);
+            //let bob_address = ink::primitives::AccountId::from(ink_e2e::bob().account_id().0);
+            let bob_address = ink::primitives::AccountId::from(ink_e2e::bob().public_key().0);
             let grant_role = build_message::<TestOracleRef>(contract_acc_id.clone())
                 .call(|oracle| oracle.grant_role(MANAGER_ROLE, Some(bob_address)));
             client
@@ -383,7 +383,7 @@ pub mod price_feed_client {
             // given
             let constructor = TestOracleRef::new();
             let contract_acc_id = client
-                .instantiate("test_oracle", &ink_e2e::alice(), constructor, 0, None)
+                .instantiate("price_feed_client", &ink_e2e::alice(), constructor, 0, None)
                 .await
                 .expect("instantiate failed")
                 .account_id;
@@ -405,8 +405,7 @@ pub mod price_feed_client {
                 .expect("create trading pair failed");
 
             // bob is granted as attestor
-            let bob_address =
-                ink::primitives::AccountId::from(ink_e2e::bob::<PolkadotConfig>().account_id().0);
+            let bob_address = ink::primitives::AccountId::from(ink_e2e::bob().public_key().0);
             let grant_role = build_message::<TestOracleRef>(contract_acc_id.clone())
                 .call(|oracle| oracle.grant_role(ATTESTOR_ROLE, Some(bob_address)));
             client
@@ -457,7 +456,7 @@ pub mod price_feed_client {
             // given
             let constructor = TestOracleRef::new();
             let contract_acc_id = client
-                .instantiate("test_oracle", &ink_e2e::alice(), constructor, 0, None)
+                .instantiate("price_feed_client", &ink_e2e::alice(), constructor, 0, None)
                 .await
                 .expect("instantiate failed")
                 .account_id;
@@ -479,8 +478,8 @@ pub mod price_feed_client {
                 .expect("create trading pair failed");
 
             // bob is granted as attestor
-            let bob_address =
-                ink::primitives::AccountId::from(ink_e2e::bob::<PolkadotConfig>().account_id().0);
+            //let bob_address = ink::primitives::AccountId::from(ink_e2e::bob().account_id().0);
+            let bob_address = ink::primitives::AccountId::from(ink_e2e::bob().public_key().0);
             let grant_role = build_message::<TestOracleRef>(contract_acc_id.clone())
                 .call(|oracle| oracle.grant_role(ATTESTOR_ROLE, Some(bob_address)));
             client
@@ -597,7 +596,7 @@ pub mod price_feed_client {
             // given
             let constructor = TestOracleRef::new();
             let contract_acc_id = client
-                .instantiate("test_oracle", &ink_e2e::alice(), constructor, 0, None)
+                .instantiate("price_feed_client", &ink_e2e::alice(), constructor, 0, None)
                 .await
                 .expect("instantiate failed")
                 .account_id;
@@ -619,8 +618,8 @@ pub mod price_feed_client {
                 .expect("create trading pair failed");
 
             // bob is granted as attestor
-            let bob_address =
-                ink::primitives::AccountId::from(ink_e2e::bob::<PolkadotConfig>().account_id().0);
+            //let bob_address = ink::primitives::AccountId::from(ink_e2e::bob().account_id().0);
+            let bob_address = ink::primitives::AccountId::from(ink_e2e::bob().public_key().0);
             let grant_role = build_message::<TestOracleRef>(contract_acc_id.clone())
                 .call(|oracle| oracle.grant_role(ATTESTOR_ROLE, Some(bob_address)));
             client
@@ -678,7 +677,7 @@ pub mod price_feed_client {
             // given
             let constructor = TestOracleRef::new();
             let contract_acc_id = client
-                .instantiate("test_oracle", &ink_e2e::alice(), constructor, 0, None)
+                .instantiate("price_feed_client", &ink_e2e::alice(), constructor, 0, None)
                 .await
                 .expect("instantiate failed")
                 .account_id;
@@ -693,8 +692,8 @@ pub mod price_feed_client {
             );
 
             // bob is granted as attestor
-            let bob_address =
-                ink::primitives::AccountId::from(ink_e2e::bob::<PolkadotConfig>().account_id().0);
+            //let bob_address = ink::primitives::AccountId::from(ink_e2e::bob().account_id().0);
+            let bob_address = ink::primitives::AccountId::from(ink_e2e::bob().public_key().0);
             let grant_role = build_message::<TestOracleRef>(contract_acc_id.clone())
                 .call(|oracle| oracle.grant_role(ATTESTOR_ROLE, Some(bob_address)));
             client
@@ -720,7 +719,7 @@ pub mod price_feed_client {
             // given
             let constructor = TestOracleRef::new();
             let contract_acc_id = client
-                .instantiate("test_oracle", &ink_e2e::alice(), constructor, 0, None)
+                .instantiate("price_feed_client", &ink_e2e::alice(), constructor, 0, None)
                 .await
                 .expect("instantiate failed")
                 .account_id;
@@ -742,8 +741,8 @@ pub mod price_feed_client {
                 .expect("create trading pair failed");
 
             // bob is granted as attestor
-            let bob_address =
-                ink::primitives::AccountId::from(ink_e2e::bob::<PolkadotConfig>().account_id().0);
+            //let bob_address = ink::primitives::AccountId::from(ink_e2e::bob().account_id().0);
+            let bob_address = ink::primitives::AccountId::from(ink_e2e::bob().public_key().0);
             let grant_role = build_message::<TestOracleRef>(contract_acc_id.clone())
                 .call(|oracle| oracle.grant_role(ATTESTOR_ROLE, Some(bob_address)));
             client
@@ -767,20 +766,20 @@ pub mod price_feed_client {
 
             Ok(())
         }
-
+        
         #[ink_e2e::test]
         async fn test_optimistic_locking(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
             // given
             let constructor = TestOracleRef::new();
             let contract_acc_id = client
-                .instantiate("test_oracle", &ink_e2e::alice(), constructor, 0, None)
+                .instantiate("price_feed_client", &ink_e2e::alice(), constructor, 0, None)
                 .await
                 .expect("instantiate failed")
                 .account_id;
 
             // bob is granted as attestor
-            let bob_address =
-                ink::primitives::AccountId::from(ink_e2e::bob::<PolkadotConfig>().account_id().0);
+            //let bob_address = ink::primitives::AccountId::from(ink_e2e::bob().account_id().0);
+            let bob_address = ink::primitives::AccountId::from(ink_e2e::bob().public_key().0);
             let grant_role = build_message::<TestOracleRef>(contract_acc_id.clone())
                 .call(|oracle| oracle.grant_role(ATTESTOR_ROLE, Some(bob_address)));
             client
@@ -830,15 +829,16 @@ pub mod price_feed_client {
         async fn test_prepare_meta_tx(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
             let constructor = TestOracleRef::new();
             let contract_acc_id = client
-                .instantiate("test_oracle", &ink_e2e::bob(), constructor, 0, None)
+                .instantiate("price_feed_client", &ink_e2e::bob(), constructor, 0, None)
                 .await
                 .expect("instantiate failed")
                 .account_id;
 
             // register the ecda public key because I am not able to retrieve if from the account id
             // Alice
-            let from =
-                ink::primitives::AccountId::from(ink_e2e::alice::<PolkadotConfig>().account_id().0);
+            //let from = ink::primitives::AccountId::from(ink_e2e::alice().account_id().0);
+            //let from = <Keypair as Signer<PolkadotConfig>>::account_id(&ink_e2e::alice());
+            let from = ink::primitives::AccountId::from(ink_e2e::alice().public_key().0);
             let ecdsa_public_key: [u8; 33] = hex_literal::hex!(
                 "037051bed73458951b45ca6376f4096c85bf1a370da94d5336d04867cfaaad019e"
             );
@@ -885,15 +885,18 @@ pub mod price_feed_client {
         async fn test_meta_tx_rollup_cond_eq(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
             let constructor = TestOracleRef::new();
             let contract_acc_id = client
-                .instantiate("test_oracle", &ink_e2e::charlie(), constructor, 0, None)
+                .instantiate("price_feed_client", &ink_e2e::charlie(), constructor, 0, None)
                 .await
                 .expect("instantiate failed")
                 .account_id;
 
             // register the ecda public key because I am not able to retrieve if from the account id
             // Alice is the attestor
-            let from =
-                ink::primitives::AccountId::from(ink_e2e::alice::<PolkadotConfig>().account_id().0);
+            //let from = ink::primitives::AccountId::from(ink_e2e::alice().account_id().0);
+            //let from = <T as PolkadotConfig>::AccountId::account_id(ink_e2e::alice());
+            //let from = ink_e2e::alice().account_id();
+            //let from = <Keypair as Signer<PolkadotConfig>>::account_id(&ink_e2e::alice());
+            let from = ink::primitives::AccountId::from(ink_e2e::alice().public_key().0);
             let ecdsa_public_key: [u8; 33] = hex_literal::hex!(
                 "037051bed73458951b45ca6376f4096c85bf1a370da94d5336d04867cfaaad019e"
             );
