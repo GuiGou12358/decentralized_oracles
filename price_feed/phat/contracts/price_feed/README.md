@@ -1,8 +1,8 @@
 # InkPriceFeed
 
-Implements a simple price feed with Ink! Offchain Rollup. It supports streaming a price feed and
-answering individual requests from the Ink! contract side.
-
+Use Ink! Offchain Rollup to:
+- Fetch the prices from Coingecko api
+- Send the prices into ink! smart contracts 
 
 ## Build
 
@@ -26,7 +26,7 @@ You can use the default smart contract deployed on Shibuya (`a4MAezQGvh8czvrBih6
 
 You can build the smart contract 
 ```bash
-cd ../../ink/contracts/test_oracle
+cd ../../ink/contracts/price_feed_client
 cargo contract build
 ```
 And use Contracts-UI or Polkadot.js to deploy your contract and interact with it.
@@ -35,17 +35,11 @@ You will have to configure `alice` as attestor.
 ### Add trading pairs and push some requests
 
 Use Contracts-UI or Polkadot.js to interact with your smart contract deployed on local node or Shibuya.
-You can create a new trading pair and request a price feed by the Phat Contract.
 
 In Shibuya, there are already 3 trading pairs defined in the contracts `a4MAezQGvh8czvrBih66JyxbvvmM45SStDg4BoVauGvMPYm`.
  - id 11 for the pair `polkadot`/`usd`
  - id 12 for `astar`/`usd`
  - id 13 for `pha`/`usd`
-
-If you want to create another request for the trading pair with the id 12 
-```bash
-cargo contract call --contract a4MAezQGvh8czvrBih66JyxbvvmM45SStDg4BoVauGvMPYm --message request_price --args 12 --url wss://rpc.shibuya.astar.network --suri "bottom drive obey lake curtain smoke basket hold race lonely fit walk"  ../../../ink/artifacts/test_oracle/test_oracle.wasm
-```
 
 ### Run the integration tests
 And finally execute the following command to start integration tests execution.
