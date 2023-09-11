@@ -1,6 +1,6 @@
 [package]
 name = "price_feed"
-version = "0.0.1"
+version = "0.0.2"
 authors = ["GuiGou"]
 edition = "2021"
 
@@ -9,20 +9,20 @@ edition = "2021"
 overflow-checks = false
 
 [dependencies]
-ink = { version = "4.2.0", default-features = false }
+ink = { version = "4.3.0", default-features = false }
 
 scale = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive"] }
-scale-info = { version = "2", default-features = false, features = ["derive"], optional = true }
-serde = { version = "1.0.171", default-features = false, features = ["derive", "alloc"]}
+scale-info = { version = "2.9.0", default-features = false, features = ["derive"], optional = true }
+serde = { version = "1.0.188", default-features = false, features = ["derive", "alloc"]}
 fixed = { version = "1", default-features = false, features = ["serde"] }
 
-pink-extension = { version = "0.4.2", default-features = false }
+pink-extension = { version = "0.4.4", default-features = false }
 pink-json = { git = "https://github.com/Phala-Network/pink-json.git", branch = "pink", default-features = false, features = ["de-number-as-str"] }
 pink-web3 = { version = "0.20.2", default-features = false, features = ["pink", "signing"] }
 
 phat_offchain_rollup = { git = "https://github.com/GuiGou12358/phat-offchain-rollup" , default-features = false, features = ["ink"] }
 
-subrpc = { package = "pink-subrpc", version = "0.4.2", default-features = false }
+subrpc = { git = "https://github.com/Phala-Network/phala-blockchain/", package = "pink-subrpc", default-features = false, optional = true }
 hex = { version = "0.4", default-features = false }
 
 [dev-dependencies]
