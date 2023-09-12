@@ -1,6 +1,6 @@
 {
   "source": {
-    "hash": "0x625b43aad492e67c6aa0374f470a642cd40558aacae3c99481ba78ff95003771",
+    "hash": "0x27ea5a2d178240f65112e2c130af4acd38a13fde81c4e46727192e3557634048",
     "language": "ink! 4.3.0",
     "compiler": "rustc 1.72.0",
     "build_info": {
@@ -15,7 +15,7 @@
   },
   "contract": {
     "name": "price_feed",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "authors": [
       "GuiGou"
     ]
@@ -50,13 +50,13 @@
         "displayName": [
           "Balance"
         ],
-        "type": 21
+        "type": 20
       },
       "blockNumber": {
         "displayName": [
           "BlockNumber"
         ],
-        "type": 18
+        "type": 23
       },
       "chainExtension": {
         "displayName": [
@@ -68,14 +68,14 @@
         "displayName": [
           "Hash"
         ],
-        "type": 22
+        "type": 21
       },
       "maxEventTopics": 4,
       "timestamp": {
         "displayName": [
           "Timestamp"
         ],
-        "type": 23
+        "type": 22
       }
     },
     "events": [],
@@ -300,173 +300,6 @@
         "selector": "0x107e33ea"
       },
       {
-        "args": [
-          {
-            "label": "trading_pair_id",
-            "type": {
-              "displayName": [
-                "TradingPairId"
-              ],
-              "type": 18
-            }
-          },
-          {
-            "label": "token0",
-            "type": {
-              "displayName": [
-                "String"
-              ],
-              "type": 3
-            }
-          },
-          {
-            "label": "token1",
-            "type": {
-              "displayName": [
-                "String"
-              ],
-              "type": 3
-            }
-          }
-        ],
-        "default": false,
-        "docs": [
-          " Feeds a price by a rollup transaction"
-        ],
-        "label": "feed_price_from_coingecko",
-        "mutates": false,
-        "payable": false,
-        "returnType": {
-          "displayName": [
-            "ink",
-            "MessageResult"
-          ],
-          "type": 19
-        },
-        "selector": "0x10a23d63"
-      },
-      {
-        "args": [
-          {
-            "label": "trading_pair_id",
-            "type": {
-              "displayName": [
-                "TradingPairId"
-              ],
-              "type": 18
-            }
-          },
-          {
-            "label": "price",
-            "type": {
-              "displayName": [
-                "u128"
-              ],
-              "type": 21
-            }
-          }
-        ],
-        "default": false,
-        "docs": [
-          " Feeds a price data point to a customized rollup target.",
-          "",
-          " For dev purpose."
-        ],
-        "label": "feed_custom_price",
-        "mutates": false,
-        "payable": false,
-        "returnType": {
-          "displayName": [
-            "ink",
-            "MessageResult"
-          ],
-          "type": 19
-        },
-        "selector": "0xd1b03f84"
-      },
-      {
-        "args": [],
-        "default": false,
-        "docs": [
-          " Processes a price request by a rollup transaction"
-        ],
-        "label": "answer_price",
-        "mutates": false,
-        "payable": false,
-        "returnType": {
-          "displayName": [
-            "ink",
-            "MessageResult"
-          ],
-          "type": 19
-        },
-        "selector": "0x95df8765"
-      },
-      {
-        "args": [
-          {
-            "label": "rpc",
-            "type": {
-              "displayName": [
-                "String"
-              ],
-              "type": 3
-            }
-          },
-          {
-            "label": "pallet_id",
-            "type": {
-              "displayName": [
-                "u8"
-              ],
-              "type": 2
-            }
-          },
-          {
-            "label": "call_id",
-            "type": {
-              "displayName": [
-                "u8"
-              ],
-              "type": 2
-            }
-          },
-          {
-            "label": "contract_id",
-            "type": {
-              "displayName": [
-                "Vec"
-              ],
-              "type": 9
-            }
-          },
-          {
-            "label": "sender_key",
-            "type": {
-              "displayName": [
-                "Option"
-              ],
-              "type": 10
-            }
-          }
-        ],
-        "default": false,
-        "docs": [
-          " Processes a price request by a rollup transaction"
-        ],
-        "label": "answer_price_with_config",
-        "mutates": false,
-        "payable": false,
-        "returnType": {
-          "displayName": [
-            "ink",
-            "MessageResult"
-          ],
-          "type": 19
-        },
-        "selector": "0x6eba0aa4"
-      },
-      {
         "args": [],
         "default": false,
         "docs": [
@@ -480,7 +313,7 @@
             "ink",
             "MessageResult"
           ],
-          "type": 19
+          "type": 18
         },
         "selector": "0x1b06912e"
       }
@@ -1167,20 +1000,12 @@
       "id": 18,
       "type": {
         "def": {
-          "primitive": "u32"
-        }
-      }
-    },
-    {
-      "id": 19,
-      "type": {
-        "def": {
           "variant": {
             "variants": [
               {
                 "fields": [
                   {
-                    "type": 20
+                    "type": 19
                   }
                 ],
                 "index": 0,
@@ -1201,7 +1026,7 @@
         "params": [
           {
             "name": "T",
-            "type": 20
+            "type": 19
           },
           {
             "name": "E",
@@ -1214,7 +1039,7 @@
       }
     },
     {
-      "id": 20,
+      "id": 19,
       "type": {
         "def": {
           "variant": {
@@ -1256,7 +1081,7 @@
       }
     },
     {
-      "id": 21,
+      "id": 20,
       "type": {
         "def": {
           "primitive": "u128"
@@ -1264,7 +1089,7 @@
       }
     },
     {
-      "id": 22,
+      "id": 21,
       "type": {
         "def": {
           "composite": {
@@ -1284,10 +1109,18 @@
       }
     },
     {
-      "id": 23,
+      "id": 22,
       "type": {
         "def": {
           "primitive": "u64"
+        }
+      }
+    },
+    {
+      "id": 23,
+      "type": {
+        "def": {
+          "primitive": "u32"
         }
       }
     },
