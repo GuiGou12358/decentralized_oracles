@@ -1,6 +1,6 @@
 [package]
-name = "price_feed_client"
-version = "0.0.1"
+name = "price_feed_consumer"
+version = "0.0.2"
 authors = ["GuiGou"]
 edition = "2021"
 

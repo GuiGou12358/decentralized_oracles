@@ -1,6 +1,8 @@
-# Test Oracle
+# Price feed consumer
 
-Implements a simple oracle to get/display the price of trading pairs. It uses the crate `phat_rollup_anchor_ink`.
+Example of `Ink! smart contract` that consumes the prices sent by the Price Feed Oracle implemented via a `phat contract.`
+It uses the crate `phat_rollup_anchor_ink`.
+
 It supports:
  - create a trading pair with an id and the token names. The name must match with the API id from CoinGecko. By example: `polkadot`, `astar`, `pha`, `usd`. Only an address granted as `MANAGER` can do it.
  - configure the attestor authorized to send the prices. Only an address granted as `MANAGER` can do it.

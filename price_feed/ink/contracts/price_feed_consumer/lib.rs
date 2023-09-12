@@ -2,7 +2,7 @@
 
 #[openbrush::implementation(Ownable, AccessControl)]
 #[openbrush::contract]
-pub mod price_feed_client {
+pub mod price_feed_consumer {
     use ink::codegen::{EmitEvent, Env};
     use ink::prelude::string::String;
     use ink::prelude::vec::Vec;
@@ -304,7 +304,7 @@ pub mod price_feed_client {
             // given
             let constructor = TestOracleRef::new();
             let contract_acc_id = client
-                .instantiate("price_feed_client", &ink_e2e::alice(), constructor, 0, None)
+                .instantiate("price_feed_consumer", &ink_e2e::alice(), constructor, 0, None)
                 .await
                 .expect("instantiate failed")
                 .account_id;
@@ -383,7 +383,7 @@ pub mod price_feed_client {
             // given
             let constructor = TestOracleRef::new();
             let contract_acc_id = client
-                .instantiate("price_feed_client", &ink_e2e::alice(), constructor, 0, None)
+                .instantiate("price_feed_consumer", &ink_e2e::alice(), constructor, 0, None)
                 .await
                 .expect("instantiate failed")
                 .account_id;
@@ -456,7 +456,7 @@ pub mod price_feed_client {
             // given
             let constructor = TestOracleRef::new();
             let contract_acc_id = client
-                .instantiate("price_feed_client", &ink_e2e::alice(), constructor, 0, None)
+                .instantiate("price_feed_consumer", &ink_e2e::alice(), constructor, 0, None)
                 .await
                 .expect("instantiate failed")
                 .account_id;
@@ -596,7 +596,7 @@ pub mod price_feed_client {
             // given
             let constructor = TestOracleRef::new();
             let contract_acc_id = client
-                .instantiate("price_feed_client", &ink_e2e::alice(), constructor, 0, None)
+                .instantiate("price_feed_consumer", &ink_e2e::alice(), constructor, 0, None)
                 .await
                 .expect("instantiate failed")
                 .account_id;
@@ -677,7 +677,7 @@ pub mod price_feed_client {
             // given
             let constructor = TestOracleRef::new();
             let contract_acc_id = client
-                .instantiate("price_feed_client", &ink_e2e::alice(), constructor, 0, None)
+                .instantiate("price_feed_consumer", &ink_e2e::alice(), constructor, 0, None)
                 .await
                 .expect("instantiate failed")
                 .account_id;
@@ -719,7 +719,7 @@ pub mod price_feed_client {
             // given
             let constructor = TestOracleRef::new();
             let contract_acc_id = client
-                .instantiate("price_feed_client", &ink_e2e::alice(), constructor, 0, None)
+                .instantiate("price_feed_consumer", &ink_e2e::alice(), constructor, 0, None)
                 .await
                 .expect("instantiate failed")
                 .account_id;
@@ -772,7 +772,7 @@ pub mod price_feed_client {
             // given
             let constructor = TestOracleRef::new();
             let contract_acc_id = client
-                .instantiate("price_feed_client", &ink_e2e::alice(), constructor, 0, None)
+                .instantiate("price_feed_consumer", &ink_e2e::alice(), constructor, 0, None)
                 .await
                 .expect("instantiate failed")
                 .account_id;
@@ -829,7 +829,7 @@ pub mod price_feed_client {
         async fn test_prepare_meta_tx(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
             let constructor = TestOracleRef::new();
             let contract_acc_id = client
-                .instantiate("price_feed_client", &ink_e2e::bob(), constructor, 0, None)
+                .instantiate("price_feed_consumer", &ink_e2e::bob(), constructor, 0, None)
                 .await
                 .expect("instantiate failed")
                 .account_id;
@@ -885,7 +885,7 @@ pub mod price_feed_client {
         async fn test_meta_tx_rollup_cond_eq(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
             let constructor = TestOracleRef::new();
             let contract_acc_id = client
-                .instantiate("price_feed_client", &ink_e2e::charlie(), constructor, 0, None)
+                .instantiate("price_feed_consumer", &ink_e2e::charlie(), constructor, 0, None)
                 .await
                 .expect("instantiate failed")
                 .account_id;
