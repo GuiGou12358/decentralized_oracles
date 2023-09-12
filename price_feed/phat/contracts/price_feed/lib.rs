@@ -333,8 +333,18 @@ mod price_feed {
                 token1: "usd".to_string(),
             },
             PriceRequestMessage {
+                trading_pair_id: 171,
+                token0: "kusama".to_string(),
+                token1: "usd".to_string(),
+            },
+            PriceRequestMessage {
                 trading_pair_id: 147,
                 token0: "astar".to_string(),
+                token1: "usd".to_string(),
+            },
+            PriceRequestMessage {
+                trading_pair_id: 720,
+                token0: "shiden".to_string(),
                 token1: "usd".to_string(),
             },
             PriceRequestMessage {
