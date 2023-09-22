@@ -130,10 +130,14 @@ mod price_feed {
             signing::get_public_key(&self.attest_key, signing::SigType::Sr25519)
         }
 
-        /// Gets the ecdsa public key for the attestor used by this rollup
+        /// Gets the ecdsa address used by this rollup in the meta transaction
         #[ink(message)]
-        pub fn get_ecdsa_public_key(&self) -> Vec<u8> {
-            signing::get_public_key(&self.attest_key, signing::SigType::Ecdsa)
+        pub fn get_attest_ecdsa_address(&self) -> Vec<u8> {
+            use ink::env::hash;
+            let input = signing::get_public_key(&self.attest_key, signing::SigType::Ecdsa);
+            let mut output = <hash::Blake2x256 as hash::HashOutput>::Type::default();
+            ink::env::hash_bytes::<hash::Blake2x256>(&input, &mut output);
+            output.to_vec()
         }
 
         /// Set attestor key.
