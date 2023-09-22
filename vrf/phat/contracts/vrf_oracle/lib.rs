@@ -185,10 +185,7 @@ mod vrf_oracle {
         /// Gets the config
         #[ink(message)]
         pub fn get_target_contract(&self) -> Option<(String, u8, u8, ContractId)> {
-            match self.config.as_ref() {
-                Some(c) => Some((c.rpc.clone(), c.pallet_id, c.call_id, c.contract_id)),
-                _ => None,
-            }
+            self.config.as_ref().map(|c| (c.rpc.clone(), c.pallet_id, c.call_id, c.contract_id))
         }
 
         /// Configures the rollup target (admin only)
@@ -348,7 +345,7 @@ mod vrf_oracle {
             let args = vec![];
             let result = self.get_js_result(js_code, args)?;
             info!("random value between {min} and {max} :  {result:?}");
-            let value = u128::from_str_radix(result.as_str(), 10)
+            let value = result.as_str().parse::<u128>()
                 .map_err(|e| ContractError::ParseIntError(e.to_string()))?;
             Ok(value)
         }
