@@ -26,7 +26,7 @@ You can use the default smart contract deployed on Shibuya (`TODO`).
 
 You can build the smart contract 
 ```bash
-cd ../../../ink/contracts/vrf_client
+cd ../../../ink/contracts/vrf_consumer
 cargo contract build
 ```
 And use Contracts-UI or Polkadot.js to deploy your contract and interact with it.
