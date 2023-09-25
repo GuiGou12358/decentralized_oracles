@@ -332,6 +332,7 @@ pub mod price_feed_consumer {
                 .await
                 .expect("create trading pair failed");
         }
+
         async fn alice_grants_bob_as_attestor(
             client: &mut ink_e2e::Client<PolkadotConfig, DefaultEnvironment>,
             contract_id: &AccountId,
@@ -763,7 +764,7 @@ pub mod price_feed_consumer {
             assert_eq!(contract_id, request.to);
             assert_eq!(&data, &request.data);
 
-            // Alice signs the message
+            // Bob signs the message
             let keypair = subxt_signer::ecdsa::dev::bob();
             let signature = keypair.sign(&scale::Encode::encode(&request)).0;
 
