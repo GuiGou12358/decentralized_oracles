@@ -51,7 +51,7 @@ mod vrf_oracle {
         /// Key for signing the rollup tx.
         attest_key: [u8; 32],
         /// The JS code that processes the rollup queue request
-        core: Lazy<Core>,
+        core_js: Lazy<CoreJs>,
     }
 
     type CodeHash = [u8; 32];
@@ -61,7 +61,7 @@ mod vrf_oracle {
         feature = "std",
         derive(scale_info::TypeInfo, ink::storage::traits::StorageLayout)
     )]
-    pub struct Core {
+    pub struct CoreJs {
         /// The JS code that processes the rollup queue request
         script: String,
         /// The configuration that would be passed to the core js script
@@ -131,7 +131,7 @@ mod vrf_oracle {
                 owner: Self::env().caller(),
                 attest_key: private_key[..32].try_into().expect("Invalid Key Length"),
                 config: None,
-                core: Default::default(),
+                core_js: Default::default(),
             }
         }
 
@@ -147,10 +147,14 @@ mod vrf_oracle {
             signing::get_public_key(&self.attest_key, signing::SigType::Sr25519)
         }
 
-        /// Gets the ecdsa public key for the attestor used by this rollup
+        /// Gets the ecdsa address used by this rollup in the meta transaction
         #[ink(message)]
-        pub fn get_ecdsa_public_key(&self) -> Vec<u8> {
-            signing::get_public_key(&self.attest_key, signing::SigType::Ecdsa)
+        pub fn get_attest_ecdsa_address(&self) -> Vec<u8> {
+            use ink::env::hash;
+            let input = signing::get_public_key(&self.attest_key, signing::SigType::Ecdsa);
+            let mut output = <hash::Blake2x256 as hash::HashOutput>::Type::default();
+            ink::env::hash_bytes::<hash::Blake2x256>(&input, &mut output);
+            output.to_vec()
         }
 
         /// Set attestor key.
@@ -190,7 +194,7 @@ mod vrf_oracle {
 
         /// Configures the rollup target (admin only)
         #[ink(message)]
-        pub fn config_client(
+        pub fn config_target_contract(
             &mut self,
             rpc: String,
             pallet_id: u8,
@@ -215,19 +219,19 @@ mod vrf_oracle {
         }
 
         #[ink(message)]
-        pub fn get_core(&self) -> Option<Core> {
-            self.core.get()
+        pub fn get_core_js(&self) -> Option<CoreJs> {
+            self.core_js.get()
         }
 
         /// Configures the core script (admin only)
         #[ink(message)]
-        pub fn config_core(&mut self, core_js: String, settings: String) -> Result<()> {
+        pub fn config_core_js(&mut self, core_js: String, settings: String) -> Result<()> {
             self.ensure_owner()?;
-            self.config_core_inner(core_js, settings);
+            self.config_core_js_inner(core_js, settings);
             Ok(())
         }
 
-        fn config_core_inner(&mut self, core_js: String, settings: String) {
+        fn config_core_js_inner(&mut self, core_js: String, settings: String) {
             let code_hash = self
                 .env()
                 .hash_bytes::<ink::env::hash::Sha2x256>(core_js.as_bytes());
@@ -235,7 +239,7 @@ mod vrf_oracle {
             // - make a generic contract to store k-v pairs.
             // - use the hash as the key to store the js.
             // - store only hash in the app contract.
-            self.core.set(&Core {
+            self.core_js.set(&CoreJs {
                 script: core_js,
                 settings,
                 code_hash,
@@ -244,13 +248,13 @@ mod vrf_oracle {
 
         /// Set the configuration (admin only)
         #[ink(message)]
-        pub fn config_core_settings(&mut self, settings: String) -> Result<()> {
+        pub fn config_core_js_settings(&mut self, settings: String) -> Result<()> {
             self.ensure_owner()?;
-            let Some(mut core) = self.core.get() else {
+            let Some(mut core) = self.core_js.get() else {
                 return Err(ContractError::CoreNotConfigured);
             };
             core.settings = settings;
-            self.core.set(&core);
+            self.core_js.set(&core);
             Ok(())
         }
 
@@ -358,6 +362,7 @@ mod vrf_oracle {
             let output_as_bytes = match output {
                 phat_js::Output::String(s) => s.into_bytes(),
                 phat_js::Output::Bytes(b) => b,
+                phat_js::Output::Undefined => return Err(ContractError::JsError("Undefined output".to_string())),
             };
             Ok(String::from_utf8(output_as_bytes).unwrap())
         }
@@ -508,7 +513,7 @@ mod vrf_oracle {
             } = config();
 
             let mut vrf = Vrf::default();
-            vrf.config_client(rpc, pallet_id, call_id, contract_id.into(), sender_key)
+            vrf.config_target_contract(rpc, pallet_id, call_id, contract_id.into(), sender_key)
                 .unwrap();
             vrf.set_attest_key(Some(attest_key)).unwrap();
 
