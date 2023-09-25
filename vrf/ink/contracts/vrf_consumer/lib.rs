@@ -18,6 +18,21 @@ pub mod vrf_consumer {
 
     pub const MANAGER_ROLE: RoleType = ink::selector_id!("MANAGER_ROLE");
 
+    /// Events emitted when a random value is requested
+    #[ink(event)]
+    pub struct RandomValueRequested {
+        /// id of the requestor
+        requestor_id: AccountId,
+        /// nonce of the requestor
+        requestor_nonce: u128,
+        /// minimum value requested
+        min: u128,
+        /// maximum value requested
+        max: u128,
+        /// when the value has been requested
+        timestamp: u64,
+    }
+
     /// Events emitted when a random value is received
     #[ink(event)]
     pub struct RandomValueReceived {
@@ -27,6 +42,8 @@ pub mod vrf_consumer {
         requestor_nonce: u128,
         /// random_value
         random_value: u128,
+        /// when the value has been received
+        timestamp: u64,
     }
 
     /// Events emitted when an error is received
@@ -38,6 +55,8 @@ pub mod vrf_consumer {
         requestor_nonce: u128,
         /// error number
         err_no: Vec<u8>,
+        /// when the error has been received
+        timestamp: u64,
     }
 
     /// Errors occurred in the contract
@@ -48,6 +67,7 @@ pub mod vrf_consumer {
         RollupAnchorError(RollupAnchorError),
         MetaTransactionError(MetaTransactionError),
         FailedToDecode,
+        IncorrectMinMaxValues,
     }
 
     /// convertor from MessageQueueError to ContractError
@@ -116,7 +136,9 @@ pub mod vrf_consumer {
         /// hash of the request by (requestor,nonce)
         hash_requests: Mapping<(AccountId, Nonce), Hash>,
         /// last random values by requestor
-        last_values: Mapping<AccountId, u128>,
+        /// The key contains the requestor address
+        /// the value contains the tuple (timestamp, random_value)
+        last_values: Mapping<AccountId, (u64, u128)>,
     }
 
     impl VrfClient {
@@ -145,7 +167,7 @@ pub mod vrf_consumer {
         }
 
         #[ink(message)]
-        pub fn get_last_value(&mut self) -> Result<Option<u128>, ContractError> {
+        pub fn get_last_value(&mut self) -> Result<Option<(u64, u128)>, ContractError> {
             let requestor = self.env().caller();
             let value = self.last_values.get(requestor);
             Ok(value)
@@ -157,6 +179,11 @@ pub mod vrf_consumer {
             min: u128,
             max: u128,
         ) -> Result<QueueIndex, ContractError> {
+
+            if min > max {
+                return Err(ContractError::IncorrectMinMaxValues);
+            }
+
             let requestor_id = self.env().caller();
             // get the current nonce
             let requestor_nonce = self.requestor_nonces.get(requestor_id).unwrap_or(0);
@@ -183,6 +210,15 @@ pub mod vrf_consumer {
             // update the nonce
             self.requestor_nonces
                 .insert(requestor_id, &requestor_nonce);
+
+            // emmit te event
+            self.env().emit_event(RandomValueRequested {
+                requestor_id,
+                requestor_nonce,
+                min,
+                max,
+                timestamp: self.env().block_timestamp(),
+            });
 
             Ok(message_id)
         }
@@ -233,6 +269,8 @@ pub mod vrf_consumer {
             // remove the ongoing hash
             self.hash_requests.remove((requestor_id, &requestor_nonce));
 
+            let timestamp = self.env().block_timestamp();
+
             // handle the response
             if message.resp_type == TYPE_RESPONSE {
                 // we received the random value
@@ -242,13 +280,14 @@ pub mod vrf_consumer {
                     .ok_or(RollupAnchorError::FailedToDecode)?;
 
                 // register the info
-                self.last_values.insert(requestor_id, &random_value);
+                self.last_values.insert(requestor_id, &(timestamp, random_value));
 
                 // emmit te event
                 self.env().emit_event(RandomValueReceived {
                     requestor_id,
                     requestor_nonce,
                     random_value,
+                    timestamp,
                 });
             } else if message.resp_type == TYPE_ERROR {
                 // we received an error
@@ -256,6 +295,7 @@ pub mod vrf_consumer {
                     requestor_id,
                     requestor_nonce,
                     err_no: message.error.unwrap_or_default(),
+                    timestamp,
                 });
             } else {
                 // response type unknown
@@ -342,6 +382,24 @@ pub mod vrf_consumer {
 
 
         #[ink_e2e::test]
+        async fn test_incorrect_min_max_values(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
+            // given
+            let contract_id = alice_instantiates_contract(&mut client).await;
+
+            // a price request is sent but min > max
+            let request_random_value = build_message::<VrfClientRef>(contract_id.clone())
+                .call(|oracle| oracle.request_random_value(1000_u128, 100_u128));
+            let result = client
+                .call(&ink_e2e::charlie(), request_random_value, 0, None)
+                .await;
+
+            assert!(result.is_err());
+
+            Ok(())
+
+        }
+
+        #[ink_e2e::test]
         async fn test_receive_reply(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
             // given
             let contract_id = alice_instantiates_contract(&mut client).await;
@@ -397,7 +455,7 @@ pub mod vrf_consumer {
                 .await;
             let last_value = get_res.return_value().expect("Last value not found");
 
-            assert_eq!(last_value, Some(131));
+            assert_eq!(last_value.unwrap().1, 131);
 
             // reply in the future should fail
             let actions = vec![
@@ -486,7 +544,7 @@ pub mod vrf_consumer {
                 .await;
             let last_value = get_res.return_value().expect("Last value not found");
 
-            assert_eq!(last_value, Some(131));
+            assert_eq!(last_value.unwrap().1, 131);
 
             // another request is sent
             let request_random_value = build_message::<VrfClientRef>(contract_id.clone())
@@ -536,7 +594,7 @@ pub mod vrf_consumer {
                 .await;
             let last_value = get_res.return_value().expect("Last value not found");
 
-            assert_eq!(last_value, Some(75_u128));
+            assert_eq!(last_value.unwrap().1, 75);
 
             Ok(())
         }
@@ -611,7 +669,7 @@ pub mod vrf_consumer {
                 .await;
             let last_value = get_res.return_value().expect("Last value not found");
 
-            assert_eq!(last_value, Some(131));
+            assert_eq!(last_value.unwrap().1, 131);
 
             // another response is received
             let random_value = Some(25_u128);
@@ -649,7 +707,7 @@ pub mod vrf_consumer {
                 .await;
             let last_value = get_res.return_value().expect("Last value not found");
 
-            assert_eq!(last_value, Some(25_u128));
+            assert_eq!(last_value.unwrap().1, 25);
 
             Ok(())
         }
