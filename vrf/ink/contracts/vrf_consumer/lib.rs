@@ -2,7 +2,7 @@
 
 #[openbrush::implementation(Ownable, AccessControl, Upgradeable)]
 #[openbrush::contract]
-pub mod vrf_client {
+pub mod vrf_consumer {
     use ink::codegen::{EmitEvent, Env};
     use ink::env::hash::{Blake2x256, HashOutput};
     use ink::prelude::vec::Vec;
@@ -17,7 +17,6 @@ pub mod vrf_client {
     };
 
     pub const MANAGER_ROLE: RoleType = ink::selector_id!("MANAGER_ROLE");
-    pub const REQUESTOR_ROLE: RoleType = ink::selector_id!("REQUESTOR_ROLE");
 
     /// Events emitted when a random value is received
     #[ink(event)]
@@ -146,7 +145,6 @@ pub mod vrf_client {
         }
 
         #[ink(message)]
-        #[openbrush::modifiers(access_control::only_role(REQUESTOR_ROLE))]
         pub fn get_last_value(&mut self) -> Result<Option<u128>, ContractError> {
             let requestor = self.env().caller();
             let value = self.last_values.get(requestor);
@@ -154,7 +152,6 @@ pub mod vrf_client {
         }
 
         #[ink(message)]
-        #[openbrush::modifiers(access_control::only_role(REQUESTOR_ROLE))]
         pub fn request_random_value(
             &mut self,
             min: u128,
@@ -206,10 +203,6 @@ pub mod vrf_client {
             MANAGER_ROLE
         }
 
-        #[ink(message)]
-        pub fn get_requestor_role(&self) -> RoleType {
-            REQUESTOR_ROLE
-        }
     }
 
     impl RollupAnchor for VrfClient {}
@@ -327,7 +320,7 @@ pub mod vrf_client {
         ) -> AccountId {
             let constructor = VrfClientRef::new();
             client
-                .instantiate("vrf_client", &ink_e2e::alice(), constructor, 0, None)
+                .instantiate("vrf_consumer", &ink_e2e::alice(), constructor, 0, None)
                 .await
                 .expect("instantiate failed")
                 .account_id
@@ -347,20 +340,6 @@ pub mod vrf_client {
                 .expect("grant bob as attestor failed");
         }
 
-        async fn alice_grants_charlie_as_requestor(
-            client: &mut ink_e2e::Client<PolkadotConfig, DefaultEnvironment>,
-            contract_id: &AccountId,
-        ) {
-            // charlie is granted as erquestor
-            let charlie_address =
-                ink::primitives::AccountId::from(ink_e2e::charlie().public_key().0);
-            let grant_role = build_message::<VrfClientRef>(contract_id.clone())
-                .call(|oracle| oracle.grant_role(REQUESTOR_ROLE, Some(charlie_address)));
-            client
-                .call(&ink_e2e::alice(), grant_role, 0, None)
-                .await
-                .expect("grant charlie as requestor failed");
-        }
 
         #[ink_e2e::test]
         async fn test_receive_reply(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
@@ -369,9 +348,6 @@ pub mod vrf_client {
 
             // bob is granted as attestor
             alice_grants_bob_as_attestor(&mut client, &contract_id).await;
-
-            // charlie is granted as requestor
-            alice_grants_charlie_as_requestor(&mut client, &contract_id).await;
 
             // a price request is sent
             let request_random_value = build_message::<VrfClientRef>(contract_id.clone())
@@ -461,9 +437,6 @@ pub mod vrf_client {
 
             // bob is granted as attestor
             alice_grants_bob_as_attestor(&mut client, &contract_id).await;
-
-            // charlie is granted as requestor
-            alice_grants_charlie_as_requestor(&mut client, &contract_id).await;
 
             // a request is sent
             let request_random_value = build_message::<VrfClientRef>(contract_id.clone())
@@ -578,9 +551,6 @@ pub mod vrf_client {
             // bob is granted as attestor
             alice_grants_bob_as_attestor(&mut client, &contract_id).await;
 
-            // charlie is granted as requestor
-            alice_grants_charlie_as_requestor(&mut client, &contract_id).await;
-
             // a first request is sent
             let request_random_value = build_message::<VrfClientRef>(contract_id.clone())
                 .call(|oracle| oracle.request_random_value(0_u128, 1000000000_u128));
@@ -692,9 +662,6 @@ pub mod vrf_client {
             // bob is granted as attestor
             alice_grants_bob_as_attestor(&mut client, &contract_id).await;
 
-            // charlie is granted as requestor
-            alice_grants_charlie_as_requestor(&mut client, &contract_id).await;
-
             // a request is sent
             let request_random_value = build_message::<VrfClientRef>(contract_id.clone())
                 .call(|oracle| oracle.request_random_value(0_u128, 1000000000_u128));
@@ -744,9 +711,6 @@ pub mod vrf_client {
 
             // bob is granted as attestor
             alice_grants_bob_as_attestor(&mut client, &contract_id).await;
-
-            // charlie is granted as requestor
-            alice_grants_charlie_as_requestor(&mut client, &contract_id).await;
 
             // a random value is requested
             let request_random_value = build_message::<VrfClientRef>(contract_id.clone())
