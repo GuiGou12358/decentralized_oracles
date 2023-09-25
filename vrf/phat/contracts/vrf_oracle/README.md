@@ -1,6 +1,6 @@
 # VrfOracle
 
-Implements a simple vrf with Ink! Offchain Rollup and phat_js. It supports teh generation of random value between min and max value and 
+Implements a simple vrf with Ink! Offchain Rollup and phat_js. It supports the generation of random value between min and max value and 
 answering individual requests from the Ink! contract side.
 
 
@@ -14,7 +14,7 @@ cargo contract build
 
 ## Run Integration tests
 
-### Deploy the ink! smart contract `vrf_client`
+### Deploy the ink! smart contract `vrf_consumer`
 
 Before you can run the tests, you need to have an ink! smart contract deployed in a Substrate node with pallet-contracts.
 
@@ -58,11 +58,3 @@ parallel execution.
 Meta transaction allows the Phat Contract to submit rollup tx with attest key signature while using
 arbitrary account to pay the gas fee. To enable meta tx in the unit test, change the `.env` file
 and specify `SENDER_KEY`.
-
-The Meta-Tx works fine in these cases
-
-|                                             | Ink! Smart Contract deployed on local node | Ink! Smart Contract deployed on testnet        |
-|---------------------------------------------|--------------------------------------------|------------------------------------------------|
-| Phat contract running on local (cargo test) | Meta-Tx works                              | Meta-Tx doesn't work (signature doesn't match) |
-| Phat contract deployed on testnet           | Never tried                                | Meta-Tx works                                  |
-
